@@ -6,7 +6,7 @@ using OrdersWebApi.Models;
 
 namespace OrdersWebApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/OrderItem")]
     [ApiController]
     public class OrderItemsAPIController : ControllerBase
     {
