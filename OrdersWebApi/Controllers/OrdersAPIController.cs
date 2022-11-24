@@ -29,7 +29,11 @@ namespace OrdersWebApi.Controllers
             return await _context.Orders.ToListAsync();
         }
 
-
+        [HttpGet("GetByDeliveryType/Type")]
+        public async Task<IEnumerable<Order>> Get(bool NeedsDelivery)
+        {
+            return await _context.Orders.Where(x=> x.NeedsDelivery == NeedsDelivery).ToListAsync();
+        }
 
         [HttpGet("Id")]
         [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
@@ -45,6 +49,7 @@ namespace OrdersWebApi.Controllers
         {
             NewOrder.ReadyToPickUp = false;
             NewOrder.Done = null;
+            NewOrder.TotalPrice= 0;
             _context.Orders.Add(NewOrder);
             await _context.SaveChangesAsync();
             //return CreatedAtAction("api/Orders/Post", NewOrder);
@@ -140,32 +145,45 @@ namespace OrdersWebApi.Controllers
                 return Conflict($"Order is already set, use HttpDelete if needed to delete the order");
             }
             //для начала соберем все айтемы из этого заказа 
-            var Items = _context.OrderItems.Where(x => x.OrderId == Id).ToList();
+            var OrderItems = _context.OrderItems.Where(x => x.OrderId == Id).ToList();
             //Вызов Клиента для общения с API
             var httpClient = _client.CreateClient("Catalogue");
             var Request = new HttpRequestMessage(HttpMethod.Post, $"api/Item/CheckItemQuantity");
             Request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            Request.Content = JsonContent.Create(Items);
+            Request.Content = JsonContent.Create(OrderItems);
             // ожидаем ответ
             var Responce = await httpClient.SendAsync(Request);
             // если ответ положительный - подтверждаем заказ
             if (Responce.IsSuccessStatusCode)
             {
+                // Вычисляем цену, записываем ее в TotalPrice
+                var Items = await GetAllItemsFromOrder(OrderToUpdate.Id);
+                //var OrderItems = _context.OrderItems.Where(x => x.OrderId == OrderToUpdate.Id );
+                int resultPrice = 0;
+                foreach (ItemDTO item in Items)
+                {
+                    OrderItem OrderItem = await _context.OrderItems.Where(x => (x.OrderId == OrderToUpdate.Id) && (x.ItemId == item.Id)).FirstOrDefaultAsync();
+                    resultPrice += item.Price * OrderItem.Quantity;
+                }
+
+                OrderToUpdate.TotalPrice = resultPrice;
+
                 OrderToUpdate.ReadyToPickUp = true;
                 await _context.SaveChangesAsync();
-                return Ok("Ok");
+                return Ok("Order is set");
             }
             //ели нет
             return Conflict(Responce.Content.ReadFromJsonAsync<List<OrderItem>>().Result);
         }
 
-        [HttpGet("GetAllItemsFromOrder/Id")]
-        public async Task<IActionResult> GetAllItemsFromOrder(int Id)
+        [HttpGet("GetAllItemsFromOrder/id")]
+        public async Task<IEnumerable<ItemDTO>> GetAllItemsFromOrder(int Id)
         {
             var Order = await _context.Orders.FindAsync(Id);
             if (Order == null)
             {
-                return NotFound($"No Order with id = {Id}");
+                return Enumerable.Empty<ItemDTO>();
+                //return NotFound($"No Order with id = {Id}");
             }
             var OrderItems = _context.OrderItems.Where(x => x.OrderId == Id).ToList();
             var httpClient = _client.CreateClient("Catalogue");
@@ -184,11 +202,14 @@ namespace OrdersWebApi.Controllers
                 }
                 else
                 {
-                    return NotFound($"No Item with id{orderItem.ItemId}");
+                    return Enumerable.Empty<ItemDTO>();
+                    //return NotFound($"No Item with id{orderItem.ItemId}");
                 }
             }
-            return Ok(ResultItems);
+            return ResultItems;
         }
+
+        
 
 
     }

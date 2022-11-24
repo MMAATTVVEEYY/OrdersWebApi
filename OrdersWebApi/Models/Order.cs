@@ -10,6 +10,8 @@ namespace OrdersWebApi.Models
         public bool ReadyToPickUp { get; set; }
         public DateTime Created { get; set; }
         public DateTime? Done { get; set; }
+
+        public int TotalPrice { get; set; }
     }
 
     

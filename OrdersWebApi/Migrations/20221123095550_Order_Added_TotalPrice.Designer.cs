@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrdersWebApi.Data;
 
@@ -11,9 +12,11 @@ using OrdersWebApi.Data;
 namespace OrdersWebApi.Migrations
 {
     [DbContext(typeof(OrdersAPIDbContext))]
-    partial class OrdersAPIDbContextModelSnapshot : ModelSnapshot
+    [Migration("20221123095550_Order_Added_TotalPrice")]
+    partial class OrderAddedTotalPrice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

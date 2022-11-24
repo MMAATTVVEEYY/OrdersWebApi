@@ -77,9 +77,13 @@ namespace OrdersWebApi.Controllers
             var OrderItem = await _context.OrderItems.FirstOrDefaultAsync(x => x.ItemId == NewOrderItem.ItemId && x.OrderId==NewOrderItem.OrderId);
             if (OrderItem != null) return Conflict($"Cannot add item with id={NewOrderItem.ItemId}, as it already is in the order. To add more use HttpPatch ");
             //Проверяем, что айтем не равен нулю
-            if (NewOrderItem.ItemId == null)
+            /*if (NewOrderItem.ItemId == null)
             {
                 return Conflict("IemId Field is required");
+            }*/
+            if (NewOrderItem.Quantity<= 0)
+            {
+                return BadRequest("Quantity should be >=0");
             }
             //Проверяем, что такой айтем впринипе есть в каталоге 
             var httpClient = _client.CreateClient("Catalogue");
